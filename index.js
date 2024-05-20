@@ -4,8 +4,6 @@ const cors = require('cors')
 require('dotenv').config()
 app.use(express.json())
 const User = require('./models')
-const nodemon = require("nodemon");
-
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
@@ -33,7 +31,7 @@ app.get("/api/users", async ( req, res ) => {
   const users = await User.find().select({_id : 1, username: 1});
   try {
     console.log("User's are: ", users);
-    return res.json([users]);
+    return res.json(users);
   }
   catch (err) {
     console.error("Error encountered: ", err);
@@ -78,32 +76,16 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // I'm coming for you
     user.log.push({ description , date: new Date(), duration });
     console.log("Pushed into user.log")
     console.log("User.log is: ", user.log)
-    // Create a new exercise instance
-    // const newUser = new User({
-    //   username: user.username,
-    //   log: [{
-    //     description,
-    //     duration,
-    //     date: date ? new Date(date) : new Date(), // Set date to now if not provided
-    //   }]
-    // });
-    // console.log("Successfully created a new exercise instance")
-    // Save the new exercise instance
+
     const savedUser = await user.save();
-    // console.log("Successfully saved the exercise instance");
-    // console.log("Now returning the JSON file");
-    // console.log("log array : ", savedUser.log);
-    // console.log("Saved user is : ", savedUser);   
-    // console.log("The date is :", savedUser.log[0].date) 
     console.log("The log count is: ", savedUser.log.length);
     return res.json({
       _id: user._id,
       username: user.username, 
-      date: savedUser.log[0].date.toDateString(), // Format date as needed
+      date: date ? new Date() : savedUser.log[0].date.toDateString(), // Format date as needed
       duration: savedUser.log[0].duration,
       description: savedUser.log[0].description,
     });
@@ -117,74 +99,36 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 
 // @ GET /api/users/:_id/logs?[from][&to][&limit]
 
-app.get("/api/users/:_id/logs", async ( req, res) => {
-  // Remember to filter user.log
-  console.log("The request body is: ", req.body);
-  console.log(req.params._id)
-  const user = await User.findById(req.params._id);
-  if( !user ) {
-    return res.json({Error: "User not found"})
-  }
-
-  try {
-    // Find his _id and return his username
-    console.log("The user's name is: ", user.username)
-    console.log("The user object is: ", user);
-    return res.json({
-      _id: user._id,
-      username: user.username,
-      count: user.log.length,
-      log: user.log
-    })
-  }
-  catch (err) {
-    console.log(`An error occured: ${err}`);
-    return res.status(500).json({error: "Error during GET request"});
-  }
-})
-
-app.get("/api/users/:_id/logs?[from][&to][&limit]", async ( req, res) => {
+app.get("/api/users/:_id/logs", async (req, res) => {
   const { from, to, limit } = req.query;
-  // Remember to filter user.log
-  console.log("The request query is: ", req.query);
+  console.log("Req.query = ", req.query);
+  console.log("User id = ", req.params._id);
+  const userId = req.params._id;
 
-  // Okay I'm trying everything
-  console.log("The request.query.from is: ", req.query.from);
-  console.log("The request.body query is: ", req.body);
-  console.log("The request.params.from is: ", req.params.from);
-  const user = await User.findById(req.params._id);
-  if( !user ) {
-    return res.status(404).json({Error: "User not found"})
-  }
+  const filter = {};
+  if (from) filter.date = { $gte: new Date(from) };
+  if (to) filter.date = { ...filter.date, $lte: new Date(to) }; // Add lte if to exists
 
   try {
-    // Find his _id and return his username
-    console.log("The user's name is: ", user.username)
-    console.log("The user object is: ", user);
+    const user = await User.findById(userId, { username: 1, log: { $elemMatch: filter } }); // Use Mongoose filtering
+    if (!user) {
+      return res.status(404).json({ Error: "User not found" });
+    }
 
-    // Filtering data using mongoose
-    if ( from && to ) {
-      user.log = { $elemMatch : {date : { $gte : new Date(from) , $lte : new Date(to)}}}
-    }
-    else if ( from ) {
-      user.log = { $elemMatch : {date : { $gte : new Date(from)}}}
-    }
-    else if ( to ) {
-      user.log = { $elemMatch : {date : { $lte : new Date(to)}}}
-    }
+    const count = user.log.length; // Get count from filtered log
+    const filteredLogs = limit ? user.log.slice(0, limit) : user.log; // Limit if provided
 
     return res.json({
       _id: user._id,
       username: user.username,
-      count: limit,
-      log: user.log
-    })
+      count,
+      log: filteredLogs,
+    });
+  } catch (err) {
+    console.error("An error occurred:", err);
+    return res.status(500).json({ error: "Error during GET request" });
   }
-  catch (err) {
-    console.log(`An error occured: ${err}`);
-    return res.status(500).json({error: "Error during GET request"});
-  }
-})
+});
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
