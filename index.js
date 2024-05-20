@@ -119,6 +119,7 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 // @ GET /api/users/:_id/logs?[from][&to][&limit]
 
 app.get("/api/users/:_id/logs", async ( req, res) => {
+  // Remember to filter user.log
   console.log("The request body is: ", req.body);
   console.log(req.params._id)
   const user = await User.findById(req.params._id);
@@ -131,6 +132,52 @@ app.get("/api/users/:_id/logs", async ( req, res) => {
     console.log("The user's name is: ", user.username)
     console.log("The user object is: ", user);
     return res.json({
+      _id: user._id,
+      username: user.username,
+      count: user.log.length,
+      log: user.log
+    })
+  }
+  catch (err) {
+    console.log(`An error occured: ${err}`);
+    return res.status(500).json({error: "Error during GET request"});
+  }
+})
+
+app.get("/api/users/:_id/logs?[from][&to][&limit]", async ( req, res) => {
+  const { from, to, limit } = req.query;
+  // Remember to filter user.log
+  console.log("The request query is: ", req.query);
+
+  // Okay I'm trying everything
+  console.log("The request.query.from is: ", req.query.from);
+  console.log("The request.body query is: ", req.body);
+  console.log("The request.params.from is: ", req.params.from);
+  const user = await User.findById(req.params._id);
+  if( !user ) {
+    return res.status(404).json({Error: "User not found"})
+  }
+
+  try {
+    // Find his _id and return his username
+    console.log("The user's name is: ", user.username)
+    console.log("The user object is: ", user);
+
+    // Filtering data using mongoose
+    if ( from && to ) {
+      user.log = { $elemMatch : {date : { $gte : new Date(from) , $lte : new Date(to)}}}
+    }
+    else if ( from ) {
+      user.log = { $elemMatch : {date : { $gte : new Date(from)}}}
+    }
+    else if ( to ) {
+      user.log = { $elemMatch : {date : { $lte : new Date(to)}}}
+    }
+
+    return res.json({
+      _id: user._id,
+      username: user.username,
+      count: limit,
       log: user.log
     })
   }
