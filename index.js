@@ -27,10 +27,10 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log("MongoDB has connected succesfully"))
 .catch((err) => console.log(`Error encountered: ${err}`))
 
-
+  // @ GET /api/users
+  // it returns all users stored in the database
 app.get("/api/users", async ( req, res ) => {
-  // Fetch all users from the database
-  const users = await User.find();
+  const users = await User.find().select({_id : 1, username: 1});
   try {
     console.log("User's are: ", users);
     return res.json([users]);
@@ -42,6 +42,7 @@ app.get("/api/users", async ( req, res ) => {
 })
 
 // @ POST /api/users
+  // adds the user into the database
 app.post("/api/users", async ( req, res ) => {
   const { username } = req.body;
 
@@ -53,9 +54,7 @@ app.post("/api/users", async ( req, res ) => {
   }
   try {
     const newUser = new User({username});
-    console.log(newUser.toJSON());
     const savedUser = await newUser.save();
-    console.log(savedUser.toJSON());
 
     return res.json({username: savedUser.username, _id: savedUser._id})
   }
