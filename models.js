@@ -10,12 +10,15 @@ const userSchema = new mongoose.Schema({
     descriptions: [{
         description :{
             type: String,
+            required: true
         },
         duration: {
             type: Number,
+            required: true
         },
         date : {
             type: Date,
+            required: true
         }
     }]
 })
