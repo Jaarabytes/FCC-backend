@@ -29,7 +29,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
 
 app.get("/api/users", async ( req, res ) => {
-  
+  // Fetch all users from the database
   const users = await User.find();
   try {
     console.log("User's are: ", users);
@@ -84,17 +84,17 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
     console.log("Pushed into user.log")
     console.log("User.log is: ", user.log)
     // Create a new exercise instance
-    const newUser = new User({
-      username: user.username,
-      log: [{
-        description,
-        duration,
-        date: date ? new Date(date) : new Date(), // Set date to now if not provided
-      }]
-    });
-    console.log("Successfully created a new exercise instance")
+    // const newUser = new User({
+    //   username: user.username,
+    //   log: [{
+    //     description,
+    //     duration,
+    //     date: date ? new Date(date) : new Date(), // Set date to now if not provided
+    //   }]
+    // });
+    // console.log("Successfully created a new exercise instance")
     // Save the new exercise instance
-    const savedUser = await newUser.save();
+    const savedUser = await user.save();
     // console.log("Successfully saved the exercise instance");
     // console.log("Now returning the JSON file");
     // console.log("log array : ", savedUser.log);
@@ -127,7 +127,7 @@ app.get("/api/users/:_id/logs", async ( req, res) => {
   }
 
   try {
-    // Find his _id and return hsi username
+    // Find his _id and return his username
     console.log("The user's name is: ", user.username)
     console.log("The user object is: ", user);
     return res.json({
