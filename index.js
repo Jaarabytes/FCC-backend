@@ -65,10 +65,14 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Create a new exercise instane
+    // I'm coming for you
+    user.log.push({ description , date: new Date(), duration });
+    console.log("Pushed into user.log")
+    console.log("User.log is: ", user.log)
+    // Create a new exercise instance
     const newUser = new User({
       username: user.username,
-      descriptions: [{
+      log: [{
         description,
         duration,
         date: date ? new Date(date) : new Date(), // Set date to now if not provided
@@ -77,18 +81,18 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
     console.log("Successfully created a new exercise instance")
     // Save the new exercise instance
     const savedUser = await newUser.save();
-    console.log("Successfully saved the exercise instance");
-
-    console.log("Now returning the JSON file");
-    console.log("Descriptions array : ", savedUser.descriptions);
-    console.log("Saved user is : ", savedUser);   
-    console.log("The date is :", savedUser.descriptions[0].date) 
+    // console.log("Successfully saved the exercise instance");
+    // console.log("Now returning the JSON file");
+    // console.log("log array : ", savedUser.log);
+    // console.log("Saved user is : ", savedUser);   
+    // console.log("The date is :", savedUser.log[0].date) 
+    console.log("The log count is: ", savedUser.log.length);
     return res.json({
       _id: user._id,
-      username: user.username, // Access username from populated user object
-      date: savedUser.descriptions[0].date.toDateString(), // Format date as needed
-      duration: savedUser.descriptions[0].duration,
-      description: savedUser.descriptions[0].description,
+      username: user.username, 
+      date: savedUser.log[0].date.toDateString(), // Format date as needed
+      duration: savedUser.log[0].duration,
+      description: savedUser.log[0].description,
     });
   } catch (err) {
     console.error(`Error encountered: ${err}`);
@@ -100,11 +104,21 @@ app.post("/api/users/:_id/exercises", async (req, res) => {
 
 // @ GET /api/users/:_id/logs?[from][&to][&limit]
 
-app.get("", ( req, res) => {
-  console.log(req.body);
+app.get("/api/users/:_id/logs", async ( req, res) => {
+  console.log("The request body is: ", req.body);
+  console.log(req.params._id)
+  const user = await User.findById(req.params._id);
+  if( !user ) {
+    return res.json({Error: "User not found"})
+  }
 
   try {
-
+    // Find his _id and return hsi username
+    console.log("The user's name is: ", user.username)
+    console.log("The user object is: ", user);
+    return res.json({
+      log: user.log
+    })
   }
   catch (err) {
     console.log(`An error occured: ${err}`);
