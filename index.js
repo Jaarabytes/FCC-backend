@@ -27,6 +27,20 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log("MongoDB has connected succesfully"))
 .catch((err) => console.log(`Error encountered: ${err}`))
 
+
+app.get("/api/users", async ( req, res ) => {
+  
+  const users = await User.find();
+  try {
+    console.log("User's are: ", users);
+    return res.json([users]);
+  }
+  catch (err) {
+    console.error("Error encountered: ", err);
+    return res.status(500).json({Error: "Error when fetching users"})
+  }
+})
+
 // @ POST /api/users
 app.post("/api/users", async ( req, res ) => {
   const { username } = req.body;
