@@ -1,42 +1,25 @@
 const mongoose = require('mongoose');
 
-// Try populating the data like ChaGPT said
-
-// user schema
+// For this git branch, I intend to only use one schema to avoid redundancy
 const userSchema = new mongoose.Schema({
-    username: {
-      type: String,
-      required: true,
-      unique: true
-    }
-  })
-
-// exercise schema
-
-const exerciseSchema = new mongoose.Schema({
-    user : {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',    //Referencing the User model
-        required: true
-    },
-    description :{
+    username : {
         type: String,
+        unique: true,
         required: true
     },
-    duration: {
-        type: Number,
-        required: true
-    },
-    date : {
-        type: Date,
-        required: true
-    }
+    descriptions: [{
+        description :{
+            type: String,
+        },
+        duration: {
+            type: Number,
+        },
+        date : {
+            type: Date,
+        }
+    }]
 })
 
 
-const User = mongoose.model('User', userSchema);
-const Exercise = mongoose.model("Exercise", exerciseSchema);
-
-
+const User = mongoose.model("User", userSchema);
 module.exports = User;
-module.exports = Exercise;
