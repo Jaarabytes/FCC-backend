@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
         unique: true,
         required: true
     },
-    descriptions: [{
+    log : [{
         description :{
             type: String,
             required: true
@@ -19,8 +19,9 @@ const userSchema = new mongoose.Schema({
         date : {
             type: Date,
             required: true
-        }
-    }]
+        },
+    },
+]
 })
 
 
