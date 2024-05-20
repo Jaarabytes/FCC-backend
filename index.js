@@ -110,7 +110,7 @@ app.get("/api/users/:_id/logs", async (req, res) => {
   if (to) filter.date = { ...filter.date, $lte: new Date(to) }; // Add lte if to exists
 
   try {
-    const user = await User.findById(userId, { username: 1, log: { $elemMatch: filter } }); // Use Mongoose filtering
+    const user = await User.findById(userId, { username: 1, log: { _id : 0, $elemMatch: filter, date : { $toString : "%Y-%m-%d"} } }); // Use Mongoose filtering
     if (!user) {
       return res.status(404).json({ Error: "User not found" });
     }
@@ -118,12 +118,24 @@ app.get("/api/users/:_id/logs", async (req, res) => {
     const count = user.log.length; // Get count from filtered log
     const filteredLogs = limit ? user.log.slice(0, limit) : user.log; // Limit if provided
 
-    return res.json({
-      _id: user._id,
+    // return res.json({
+    //   _id: user._id,
+    //   username: user.username,
+    //   count,
+    //   log: filteredLogs,
+    // });
+    const transformedUser = {
+      _id: user._id, // Include _id if needed in response
       username: user.username,
-      count,
-      log: filteredLogs,
-    });
+      count: user.log.length,
+      log: user.log.map((logEntry) => ({
+        ...logEntry,
+        _id: undefined, // Remove _id from each log entry
+        date: (new Date(logEntry.date)).toDateString(), // Convert date to string
+      })),
+    };
+
+    return res.json(transformedUser);
   } catch (err) {
     console.error("An error occurred:", err);
     return res.status(500).json({ error: "Error during GET request" });
