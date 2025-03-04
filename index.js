@@ -1,3 +1,4 @@
+
 const express = require('express')
 const app = express()
 const cors = require('cors')
@@ -27,6 +28,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
   // @ GET /api/users
   // it returns all users stored in the database
+
 app.get("/api/users", async ( req, res ) => {
   const users = await User.find().select({_id : 1, username: 1});
   try {
@@ -39,7 +41,7 @@ app.get("/api/users", async ( req, res ) => {
   }
 })
 
-// @ POST /api/users
+  // @ POST /api/users
   // adds the user into the database
 app.post("/api/users", async ( req, res ) => {
   const { username } = req.body;
@@ -65,41 +67,50 @@ app.post("/api/users", async ( req, res ) => {
 // @ POST /api/users/:_id/exercises
 
 app.post("/api/users/:_id/exercises", async (req, res) => {
+  console.log("---------------------------------")
+  console.log("POST /api/users/:_id/exercises")
   const { _id, description, duration, date } = req.body;
-  console.log(req.body);
+  console.log(`The request body is: ${JSON.stringify(req.body)}`);
 
   try {
     // Find the user by their ID (if needed for username or other references)
     console.log("The _id parameter is: ", req.params._id);
     const user = await User.findById(req.params._id); // Assuming you have a User model
+    console.log(`User is: ${JSON.stringify(user)}`)
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(400).send("[object Object]");
     }
 
-    user.log.push({ description , date: new Date(), duration });
+    user.log.push({ description , date , duration });
     console.log("Pushed into user.log")
     console.log("User.log is: ", user.log)
 
     const savedUser = await user.save();
     console.log("The log count is: ", savedUser.log.length);
-    return res.json({
-      _id: user._id,
+    const lastIndex = savedUser.log.length - 1;
+    const requiredDate = new Date(user.log[lastIndex].date);
+    const returnedJSON = {
+      _id: req.params._id,
       username: user.username, 
-      date: date ? new Date() : savedUser.log[0].date.toDateString(), // Format date as needed
-      duration: savedUser.log[0].duration,
-      description: savedUser.log[0].description,
-    });
+      date: date ? requiredDate.toDateString() : new Date(),
+      duration: Number(duration),
+      description: description,
+    }
+
+    console.log(`Returned JSON is: ${JSON.stringify(returnedJSON)}`)
+    console.log("------------------------------------------")
+    return res.json(returnedJSON);
   } catch (err) {
     console.error(`Error encountered: ${err}`);
     return res.status(500).json({ error: "Error creating exercise" });
   }
 });
 
-
-
 // @ GET /api/users/:_id/logs?[from][&to][&limit]
 
 app.get("/api/users/:_id/logs", async (req, res) => {
+  console.log("--------------------------------------------------")
+  console.log("@ GET /api/users/:_id/logs?[from][&to][&limit]")
   const { from, to, limit } = req.query;
   console.log("Req.query = ", req.query);
   console.log("User id = ", req.params._id);
@@ -112,29 +123,35 @@ app.get("/api/users/:_id/logs", async (req, res) => {
   try {
     const user = await User.findById(userId, { username: 1, log: { _id : 0, $elemMatch: filter, date : { $toString : "%Y-%m-%d"} } }); // Use Mongoose filtering
     if (!user) {
-      return res.status(404).json({ Error: "User not found" });
+      // Free code camp be weird
+      console.log("User not found")
+      return res.status(400).send("object Object");
     }
 
-    const count = user.log.length; // Get count from filtered log
+    // const count = user.log.length; // Get count from filtered log
     const filteredLogs = limit ? user.log.slice(0, limit) : user.log; // Limit if provided
 
-    // return res.json({
-    //   _id: user._id,
-    //   username: user.username,
-    //   count,
-    //   log: filteredLogs,
-    // });
+  //  return res.json({
+  //    _id: user._id,
+  //    username: user.username,
+  //    count,
+  //    log: filteredLogs,
+  //    });
+
     const transformedUser = {
-      _id: user._id, // Include _id if needed in response
+      _id: user._id,
       username: user.username,
       count: user.log.length,
-      log: user.log.map((logEntry) => ({
-        ...logEntry,
-        _id: undefined, // Remove _id from each log entry
-        date: (new Date(logEntry.date)).toDateString(), // Convert date to string
-      })),
+      log: (filteredLogs).map(entryLog => {
+        return {
+          description: entryLog.description,
+          duration: entryLog.duration,
+          date: new Date(entryLog.date).toDateString()
+        }
+      })
     };
-
+    console.log(`Transormed user is: ${JSON.stringify(transformedUser)}`)
+    console.log("--------------------------------------------------")
     return res.json(transformedUser);
   } catch (err) {
     console.error("An error occurred:", err);
