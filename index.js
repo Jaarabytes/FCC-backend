@@ -1,4 +1,5 @@
 
+
 const express = require('express')
 const app = express()
 const cors = require('cors')
@@ -32,7 +33,6 @@ mongoose.connect(process.env.MONGO_URI, {
 app.get("/api/users", async ( req, res ) => {
   const users = await User.find().select({_id : 1, username: 1});
   try {
-    console.log("User's are: ", users);
     return res.json(users);
   }
   catch (err) {
@@ -67,38 +67,40 @@ app.post("/api/users", async ( req, res ) => {
 // @ POST /api/users/:_id/exercises
 
 app.post("/api/users/:_id/exercises", async (req, res) => {
-  console.log("---------------------------------")
-  console.log("POST /api/users/:_id/exercises")
-  const { _id, description, duration, date } = req.body;
+  console.log("---------------------------------");
+  console.log("POST /api/users/:_id/exercises");
+  const { description, duration, date } = req.body;
   console.log(`The request body is: ${JSON.stringify(req.body)}`);
 
   try {
     // Find the user by their ID (if needed for username or other references)
     console.log("The _id parameter is: ", req.params._id);
-    const user = await User.findById(req.params._id); // Assuming you have a User model
-    console.log(`User is: ${JSON.stringify(user)}`)
+    const user = await User.findById(req.params._id);
+    console.log(`User is: ${JSON.stringify(user)}`);
     if (!user) {
       return res.status(400).send("[object Object]");
     }
 
-    user.log.push({ description , date , duration });
-    console.log("Pushed into user.log")
-    console.log("User.log is: ", user.log)
+    const exerciseDate = date ? new Date(date) : new Date();
+
+    user.log.push({ description, date: exerciseDate, duration });
+    console.log("Pushed into user.log");
+    console.log("User.log is: ", user.log);
 
     const savedUser = await user.save();
     console.log("The log count is: ", savedUser.log.length);
     const lastIndex = savedUser.log.length - 1;
-    const requiredDate = new Date(user.log[lastIndex].date);
+
     const returnedJSON = {
       _id: req.params._id,
-      username: user.username, 
-      date: date ? requiredDate.toDateString() : new Date(),
+      username: user.username,
+      date: exerciseDate.toDateString(),
       duration: Number(duration),
       description: description,
-    }
+    };
 
-    console.log(`Returned JSON is: ${JSON.stringify(returnedJSON)}`)
-    console.log("------------------------------------------")
+    console.log(`Returned JSON is: ${JSON.stringify(returnedJSON)}`);
+    console.log("------------------------------------------");
     return res.json(returnedJSON);
   } catch (err) {
     console.error(`Error encountered: ${err}`);
@@ -128,15 +130,7 @@ app.get("/api/users/:_id/logs", async (req, res) => {
       return res.status(400).send("object Object");
     }
 
-    // const count = user.log.length; // Get count from filtered log
     const filteredLogs = limit ? user.log.slice(0, limit) : user.log; // Limit if provided
-
-  //  return res.json({
-  //    _id: user._id,
-  //    username: user.username,
-  //    count,
-  //    log: filteredLogs,
-  //    });
 
     const transformedUser = {
       _id: user._id,
@@ -162,3 +156,4 @@ app.get("/api/users/:_id/logs", async (req, res) => {
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
 })
+
